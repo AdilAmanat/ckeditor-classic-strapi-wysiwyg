@@ -1,5 +1,4 @@
 import ClassicEditorBase from '@ckeditor/ckeditor5-editor-classic/src/classiceditor';
-
 import Essentials from '@ckeditor/ckeditor5-essentials/src/essentials';
 import Autoformat from '@ckeditor/ckeditor5-autoformat/src/autoformat';
 import Bold from '@ckeditor/ckeditor5-basic-styles/src/bold';
@@ -42,6 +41,9 @@ import { StrapiUploadAdapter } from '@gtomato/ckeditor5-strapi-upload-plugin';
 import { StrapiMediaLib } from './strapi-medialib-plugin';
 import sanitizeHtml from 'sanitize-html';
 import FullScreen from './fullscreen-plugin';
+import imageIcon from '@ckeditor/ckeditor5-core/theme/icons/pencil.svg';
+import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
+import ButtonView from '@ckeditor/ckeditor5-ui/src/button/buttonview'; 
 
 export default class ClassicEditor extends ClassicEditorBase { }
 
@@ -72,7 +74,8 @@ ClassicEditor.builtinPlugins = [
 	Table,
 	TableToolbar,
 	TableProperties,
-	TableCellProperties,
+	TableCellProperties, 
+	InsertToolTip,
 ];
 
 // Editor configuration.
@@ -93,13 +96,14 @@ ClassicEditor.defaultConfig = {
 			'link',
 			'bulletedList',
 			'numberedList',
-			'insertImage',
+			'InsertToolTip',
 			'specialCharacters',
 			'blockQuote',
 			'insertTable',
 			'mediaEmbed',
 			'htmlEmbed',
-			'codeBlock',
+			'codeBlock', 
+			'InsertToolTip',
 		],
 		shouldNotGroupWhenFull: true
 	},
@@ -162,12 +166,41 @@ ClassicEditor.defaultConfig = {
 		showPreviews: true
 	},
 	sanitizeHtml: (inputHtml) => {
-		const outputHtml = sanitizeHtml(inputHtml);
+		const outputHtml = inputHtml; //sanitizeHtml(inputHtml);
 		return {
 			html: outputHtml,
 			hasChanged: true
 		};
 	},
 	// This value must be kept in sync with the language defined in webpack.config.js.
-	language: 'en'
+	language: 'en', 
+
 };
+
+class InsertToolTip extends Plugin {
+    init() {
+        const editor = this.editor;
+        editor.ui.componentFactory.add( 'InsertToolTip', locale => {
+            const view = new ButtonView( locale );
+
+            view.set( {
+                label: 'Tooltip',
+                icon: imageIcon,
+                tooltip: true
+            } );
+            // Callback executed once the image is clicked.
+            view.on( 'execute', () => {
+                const inputTooltipText = prompt( 'ToolTip Text' );
+                editor.model.change( writer => {
+					const link = writer.createText(inputTooltipText, {
+						linkHref: "#bayut-content-tooltip"
+					});
+                    // Insert the image in the current selection location.
+                    editor.model.insertContent( link, editor.model.document.selection );
+                } );
+            } );
+
+            return view;
+        } ); 
+    }
+}
